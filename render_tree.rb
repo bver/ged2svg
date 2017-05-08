@@ -12,17 +12,36 @@ TEXT_COLOR = 'black'
 TEXT_NAME_SIZE = 13
 TEXT_LIFE_SIZE = 9 
 TEXT_NAME_Y = RECT_HEIGHT*3/7 
-TEXT_LIFE_Y = RECT_HEIGHT*6/7 
+TEXT_LIFE_Y = RECT_HEIGHT*6/7
+LINE_STYLE = 'stroke:black;stroke-width:2'
 
 XY = Struct.new(:x, :y)
 
 def compute_size(people, ref)
-  XY.new(RECT_WIDTH+2*MARGIN_X, RECT_HEIGHT+2*MARGIN_Y)
+  person = people[ref] 
+  XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
+         RECT_HEIGHT + 2 * MARGIN_Y)
 end 
 
 def render_person(svg, people, ref, person_size)
   person = people[ref]
-  svg.g(transform: "translate(#{MARGIN_X},#{MARGIN_Y})") {|g| render_rect(g, person) }
+  spouses = person.spouses
+  raise 'num of spouses > 2 not supported' if spouses.size > 2
+  shift_x = (spouses.size == 2) ? MARGIN_X+RECT_WIDTH : 0 
+
+  x = RECT_WIDTH/2 + MARGIN_X
+  svg.line(x1: x+shift_x, y1: 0, x2: x+shift_x, y2: MARGIN_Y, style: LINE_STYLE)
+  svg.g(transform: "translate(#{MARGIN_X+shift_x},#{MARGIN_Y})") {|g| render_rect(g, person) }
+  if spouses.size > 0
+    svg.g(transform: "translate(#{MARGIN_X*2+RECT_WIDTH+shift_x},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
+    y = MARGIN_Y+RECT_HEIGHT/2
+    svg.line(x1: MARGIN_X+RECT_WIDTH+shift_x, y1: y, x2: 2*MARGIN_X+RECT_WIDTH+shift_x, y2: y, style: LINE_STYLE)
+  end
+  if spouses.size == 2
+    svg.g(transform: "translate(#{shift_x-RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
+    y = MARGIN_Y+RECT_HEIGHT/2
+    svg.line(x1: shift_x, y1: y, x2: MARGIN_X+shift_x, y2: y, style: LINE_STYLE)
+  end
 end
 
 def render_rect(svg, person)
