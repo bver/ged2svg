@@ -16,16 +16,8 @@ def parse_ged filename
       when :person
         people[ref] = Person.new(given, surname, sex, birth, death)
       when :family
-        h = people[husband]
-        unless h.nil?
-          h.set_children children
-          h.add_spouse_ref wife 
-        end
-        w = people[wife]
-        unless w.nil?
-          w.set_children children
-          w.add_spouse_ref husband
-        end
+        people[husband].add_family(wife, children) unless husband.nil? 
+        people[wife].add_family(husband, children) unless wife.nil?
       end
 
       case rest

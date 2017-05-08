@@ -1,6 +1,6 @@
 
 class Person
-  attr_reader :name, :sex, :birth, :death, :spouse_refs, :children_refs 
+  attr_reader :name, :sex, :birth, :death, :families 
   
   def initialize(given, surname, sex, birth, death)
     @name = given.nil? ? '' : given
@@ -8,15 +8,19 @@ class Person
     @sex = (sex == 'M') ? :male : :female 
     @birth = Person.parse_date birth
     @death = Person.parse_date death
-    @spouse_refs, @children_refs = [], []
+    @families = {}
   end
   
-  def add_spouse_ref spouse_ref
-    @spouse_refs << spouse_ref 
+  def add_family(spouse_ref, children_refs)
+    @families[spouse_ref] = children_refs.clone unless spouse_ref.nil?
   end
 
-  def set_children children_ref
-    @children_refs = children_ref.clone 
+  def spouses
+    @families.keys
+  end
+
+  def children spouse_ref
+    @families[spouse_ref]
   end
 
   @@months = { 'JAN'=>1, 'FEB'=>2, 'MAR'=>3, 'APR'=>4, 'MAY'=>5, 'JUN'=>6, 
