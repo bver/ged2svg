@@ -14,17 +14,17 @@ def parse_ged filename
     if level == 0
       case mode
       when :person
-        people[ref] = Person.new("#{given} #{surname}", sex, birth, death)
+        people[ref] = Person.new(given, surname, sex, birth, death)
       when :family
         h = people[husband]
         unless h.nil?
-          h.children_refs = children.clone
-          h.spouse_refs << wife 
+          h.set_children children
+          h.add_spouse_ref wife 
         end
         w = people[wife]
         unless w.nil?
-          w.children_refs = children.clone
-          w.spouse_refs << husband
+          w.set_children children
+          w.add_spouse_ref husband
         end
       end
 
@@ -46,7 +46,7 @@ def parse_ged filename
       when 'SURN'
         surname = rest
       when 'SEX'
-        sex = (rest == 'M') ? :male : :female
+        sex = rest
       when 'BIRT'
         bd = :birth
         birth = nil
