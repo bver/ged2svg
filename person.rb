@@ -19,8 +19,8 @@ class Person
     @families.keys
   end
 
-  def children spouse_ref
-    @families[spouse_ref]
+  def children spouse_ref=nil
+    spouse_ref.nil? ? @families.values.flatten : @families[spouse_ref]
   end
 
   def livespan

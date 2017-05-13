@@ -18,13 +18,22 @@ LINE_STYLE = 'stroke:black;stroke-width:2'
 XY = Struct.new(:x, :y)
 
 def compute_size(people, ref)
-  person = people[ref] 
-  XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
-         RECT_HEIGHT + 2 * MARGIN_Y)
+  person = people[ref]
+  raise "ref '#{ref}' not found" if person.nil? 
+  person_size = XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
+                       RECT_HEIGHT + 2 * MARGIN_Y)
+  children = person.children 
+  return person_size if children.empty?
+
+  children_xy = children.map {|child_ref| compute_size(people, child_ref) }
+  ch_x = children_xy.inject(0) {|sum, xy| sum + xy.x } 
+  max_xy = children_xy.max {|a, b| a.y <=> b.y }
+  XY.new( [person_size.x, ch_x].max, person_size.y + max_xy.y )
 end 
 
-def render_person(svg, people, ref, person_size)
+def render_person(svg, people, ref, person_size, x=0, y=0)
   person = people[ref]
+  raise "ref '#{ref}' not found" if person.nil? 
   spouses = person.spouses
   raise 'num of spouses > 2 not supported' if spouses.size > 2
   shift_x = (spouses.size == 2) ? MARGIN_X+RECT_WIDTH : 0 
@@ -44,9 +53,9 @@ def render_person(svg, people, ref, person_size)
   end
 end
 
-def render_rect(svg, person)
+def render_rect(svg, person, x=0, y=0)
   rounding = (person.sex == :male) ? 0 : RECT_ROUND 
-  svg.rect(x: 0, y: 0, rx: rounding, ry: rounding, width: RECT_WIDTH, height: RECT_HEIGHT, style: RECT_STYLE)
+  svg.rect(x: x, y: y, rx: rounding, ry: rounding, width: RECT_WIDTH, height: RECT_HEIGHT, style: RECT_STYLE)
   svg.text(fill: TEXT_COLOR, 'text-anchor': 'middle') do |text|
     text.tspan(person.name, x: RECT_WIDTH/2, y: TEXT_NAME_Y, 'font-size': TEXT_NAME_SIZE)
     text.tspan(person.livespan, x: RECT_WIDTH/2, y: TEXT_LIFE_Y, 'font-size': TEXT_LIFE_SIZE)
