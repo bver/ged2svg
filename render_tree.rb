@@ -38,19 +38,33 @@ def render_person(svg, people, ref, person_size, x=0, y=0)
   raise 'num of spouses > 2 not supported' if spouses.size > 2
   shift_x = (spouses.size == 2) ? MARGIN_X+RECT_WIDTH : 0 
 
-  x = RECT_WIDTH/2 + MARGIN_X
-  svg.line(x1: x+shift_x, y1: 0, x2: x+shift_x, y2: MARGIN_Y, style: LINE_STYLE)
+  mid_x = RECT_WIDTH/2 + MARGIN_X
+  mid_y = RECT_HEIGHT/2 + MARGIN_Y 
+  svg.line(x1: mid_x+shift_x, y1: 0, x2: mid_x+shift_x, y2: MARGIN_Y, style: LINE_STYLE)
   svg.g(transform: "translate(#{MARGIN_X+shift_x},#{MARGIN_Y})") {|g| render_rect(g, person) }
   if spouses.size > 0
     svg.g(transform: "translate(#{MARGIN_X*2+RECT_WIDTH+shift_x},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
-    y = MARGIN_Y+RECT_HEIGHT/2
-    svg.line(x1: MARGIN_X+RECT_WIDTH+shift_x, y1: y, x2: 2*MARGIN_X+RECT_WIDTH+shift_x, y2: y, style: LINE_STYLE)
+    svg.line(x1: MARGIN_X+RECT_WIDTH+shift_x, y1: mid_y, x2: 2*MARGIN_X+RECT_WIDTH+shift_x, y2: mid_y, style: LINE_STYLE)
   end
   if spouses.size == 2
     svg.g(transform: "translate(#{shift_x-RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
-    y = MARGIN_Y+RECT_HEIGHT/2
-    svg.line(x1: shift_x, y1: y, x2: MARGIN_X+shift_x, y2: y, style: LINE_STYLE)
+    svg.line(x1: shift_x, y1: mid_y, x2: MARGIN_X+shift_x, y2: mid_y, style: LINE_STYLE)
   end
+
+  children = person.children spouses.first
+  unless children.empty?
+    down_x = 1.5 * MARGIN_X+RECT_WIDTH
+    svg.line(x1: down_x, y1: mid_y, x2: down_x, y2: 2*mid_y, style: LINE_STYLE)
+  end
+
+  if spouses.size == 2
+    children = person.children spouses.last
+    unless children.empty?
+      down_x = 1.5 * MARGIN_X+RECT_WIDTH + shift_x
+      svg.line(x1: down_x, y1: mid_y, x2: down_x, y2: 2*mid_y, style: LINE_STYLE)
+    end
+  end
+ 
 end
 
 def render_rect(svg, person, x=0, y=0)
