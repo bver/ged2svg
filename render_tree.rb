@@ -60,7 +60,7 @@ def render_person(svg, people, ref)
   svg.g(transform: "translate(#{MARGIN_X+shift_x},#{MARGIN_Y})") {|g| render_rect(g, person) }
 
   child_y = 2*mid_y
-  down_x = 1.5 * MARGIN_X+RECT_WIDTH   
+  down_x = 1.5 * MARGIN_X + RECT_WIDTH
   start_x = 0
  
   if spouses.size > 0
@@ -78,9 +78,9 @@ def render_person(svg, people, ref)
   end
 end
 
-def render_rect(svg, person, x=0, y=0)
+def render_rect(svg, person)
   rounding = (person.sex == :male) ? 0 : RECT_ROUND 
-  svg.rect(x: x, y: y, rx: rounding, ry: rounding, width: RECT_WIDTH, height: RECT_HEIGHT, style: RECT_STYLE)
+  svg.rect(x: 0, y: 0, rx: rounding, ry: rounding, width: RECT_WIDTH, height: RECT_HEIGHT, style: RECT_STYLE)
   svg.text(fill: TEXT_COLOR, 'text-anchor': 'middle') do |text|
     text.tspan(person.name, x: RECT_WIDTH/2, y: TEXT_NAME_Y, 'font-size': TEXT_NAME_SIZE)
     text.tspan(person.livespan, x: RECT_WIDTH/2, y: TEXT_LIFE_Y, 'font-size': TEXT_LIFE_SIZE)
