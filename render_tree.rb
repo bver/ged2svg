@@ -5,7 +5,7 @@ require_relative 'person'
 RECT_WIDTH = 150
 RECT_HEIGHT = 40
 MARGIN_X = 20
-MARGIN_Y = 10
+MARGIN_Y = 20
 RECT_STYLE = 'fill:lavender;stroke:black'
 RECT_ROUND = 5
 TEXT_COLOR = 'black'
@@ -13,6 +13,7 @@ TEXT_NAME_SIZE = 13
 TEXT_LIFE_SIZE = 9 
 TEXT_NAME_Y = RECT_HEIGHT*3/7 
 TEXT_LIFE_Y = RECT_HEIGHT*6/7
+CHILD_LINES_DIFF_Y = 8
 LINE_STYLE = 'stroke:black;stroke-width:2'
 
 XY = Struct.new(:x, :y)
@@ -31,6 +32,21 @@ def compute_size(people, ref)
   XY.new( [person_size.x, ch_x].max, person_size.y + max_xy.y )
 end 
 
+def render_children(svg, people, children, down_x, child_y, offset_x=0)
+    return if children.empty?
+    svg.line(x1: down_x, y1: RECT_HEIGHT/2 + MARGIN_Y, x2: down_x, y2: child_y, style: LINE_STYLE)
+
+    connect_points = [ down_x ]
+    children.each do |child_ref| 
+        xy = compute_size(people, child_ref)
+        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref) }       
+        connect_points << (offset_x + MARGIN_X + ((people[child_ref].spouses.size == 2) ? MARGIN_X + 1.5 * RECT_WIDTH : RECT_WIDTH/2))
+        offset_x += xy.x       
+    end
+    svg.line(x1: connect_points.min, y1: child_y, x2: connect_points.max, y2: child_y, style: LINE_STYLE) 
+    offset_x
+end
+
 def render_person(svg, people, ref)
   person = people[ref]
   raise "ref '#{ref}' not found" if person.nil? 
@@ -40,51 +56,26 @@ def render_person(svg, people, ref)
 
   mid_x = RECT_WIDTH/2 + MARGIN_X
   mid_y = RECT_HEIGHT/2 + MARGIN_Y
-  child_y = 2*mid_y
   svg.line(x1: mid_x+shift_x, y1: 0, x2: mid_x+shift_x, y2: MARGIN_Y, style: LINE_STYLE)
   svg.g(transform: "translate(#{MARGIN_X+shift_x},#{MARGIN_Y})") {|g| render_rect(g, person) }
 
-  offset_x = 0 
+  child_y = 2*mid_y
+  down_x = 1.5 * MARGIN_X+RECT_WIDTH   
+  start_x = 0
+ 
   if spouses.size > 0
     svg.g(transform: "translate(#{MARGIN_X*2+RECT_WIDTH+shift_x},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
     svg.line(x1: MARGIN_X+RECT_WIDTH+shift_x, y1: mid_y, x2: 2*MARGIN_X+RECT_WIDTH+shift_x, y2: mid_y, style: LINE_STYLE)
 
-    children = person.children spouses.first
-    unless children.empty?
-      down_x = 1.5 * MARGIN_X+RECT_WIDTH
-      svg.line(x1: down_x, y1: mid_y, x2: down_x, y2: child_y, style: LINE_STYLE)
-
-      connect_points = [ down_x ]
-      children.each do |child_ref| 
-        xy = compute_size(people, child_ref)
-        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref) }       
-        connect_points << (offset_x + MARGIN_X + ((people[child_ref].spouses.size == 2) ? MARGIN_X + 1.5* RECT_WIDTH : RECT_WIDTH/2))
-        offset_x += xy.x       
-      end
-      svg.line(x1: connect_points.min, y1: child_y, x2: connect_points.max, y2: child_y, style: LINE_STYLE) 
-    end
+    start_x = render_children(svg, people, person.children(spouses.first), down_x, child_y)
   end
 
   if spouses.size == 2
     svg.g(transform: "translate(#{shift_x-RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
     svg.line(x1: shift_x, y1: mid_y, x2: MARGIN_X+shift_x, y2: mid_y, style: LINE_STYLE)
 
-    children = person.children spouses.last
-    unless children.empty?
-      down_x = 1.5 * MARGIN_X+RECT_WIDTH + shift_x
-      svg.line(x1: down_x, y1: mid_y, x2: down_x, y2: child_y, style: LINE_STYLE)
-
-      connect_points = [ down_x ]
-      children.each do |child_ref| 
-        xy = compute_size(people, child_ref)
-        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref) }       
-        connect_points << (offset_x + MARGIN_X + ((people[child_ref].spouses.size == 2) ? MARGIN_X + 1.5* RECT_WIDTH : RECT_WIDTH/2))
-        offset_x += xy.x
-      end  
-      svg.line(x1: connect_points.min, y1: child_y, x2: connect_points.max, y2: child_y, style: LINE_STYLE) 
-    end
+    render_children(svg, people, person.children(spouses.last), down_x+shift_x, child_y-CHILD_LINES_DIFF_Y, start_x)
   end
-
 end
 
 def render_rect(svg, person, x=0, y=0)
