@@ -26,5 +26,5 @@ people = parse_ged file_ged
 trunk = find_trunk(people, root_ref, central_ref)
 $stderr.puts trunk.join ' '
 
-File.open(file_svg, 'w') {|f| f.puts render_tree(people, root_ref) }
+File.open(file_svg, 'w') {|f| f.puts render_tree(people, root_ref, trunk) }
 

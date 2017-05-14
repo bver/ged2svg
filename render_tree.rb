@@ -32,16 +32,18 @@ def compute_size(people, ref)
   XY.new( [person_size.x, ch_x].max, person_size.y + max_xy.y )
 end 
 
-def render_children(svg, people, children, down_x, child_y, offset_x=0)
-    return 0 if children.empty?
+def render_children(svg, people, children, down_x, child_y, restriction, level, ref, offset_x=0)
+    return offset_x if children.empty?
     # center a single child ... make sure it does not cause colisions with other spouse's children
     offset_x = [offset_x, down_x-RECT_WIDTH/2-MARGIN_X].max if children.size == 1 and people[children.first].children.empty? 
     svg.line(x1: down_x, y1: RECT_HEIGHT/2 + MARGIN_Y, x2: down_x, y2: child_y, style: LINE_STYLE)
 
+    return offset_x unless restriction.include?(ref) or level >= restriction.size
+
     connect_points = [ down_x ]
     children.each do |child_ref| 
         xy = compute_size(people, child_ref)
-        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref, xy) }
+        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref, xy, restriction, level+1) }
         mid_point = (people[child_ref].spouses.size == 1) ? (xy.x - RECT_WIDTH - MARGIN_X)/2 : xy.x/2
         connect_points << (offset_x + mid_point)
         offset_x += xy.x
@@ -50,7 +52,7 @@ def render_children(svg, people, children, down_x, child_y, offset_x=0)
     offset_x
 end
 
-def render_person(svg, people, ref, xy, is_root=false)
+def render_person(svg, people, ref, xy, restriction, level=0)
   person = people[ref]
   raise "ref '#{ref}' not found" if person.nil? 
 
@@ -61,19 +63,19 @@ def render_person(svg, people, ref, xy, is_root=false)
   spouses = person.spouses
   case spouses.size
   when 0
-    svg.line(x1: middle_x, y1: 0, x2: middle_x, y2: MARGIN_Y, style: LINE_STYLE) unless is_root
+    svg.line(x1: middle_x, y1: 0, x2: middle_x, y2: MARGIN_Y, style: LINE_STYLE) if level>0 
     svg.g(transform: "translate(#{(xy.x-RECT_WIDTH)/2},#{MARGIN_Y})") {|g| render_rect(g, person) }
   when 1
     connect_x = (xy.x - RECT_WIDTH - MARGIN_X) / 2
-    svg.line(x1: connect_x, y1: 0, x2: connect_x, y2: MARGIN_Y, style: LINE_STYLE) unless is_root 
+    svg.line(x1: connect_x, y1: 0, x2: connect_x, y2: MARGIN_Y, style: LINE_STYLE) if level>0
     svg.g(transform: "translate(#{connect_x-RECT_WIDTH/2},#{MARGIN_Y})") {|g| render_rect(g, person) }
 
     svg.g(transform: "translate(#{(xy.x+MARGIN_X)/2},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
     svg.line(x1: (xy.x-MARGIN_X)/2, y1: marriage_y, x2: (xy.x+MARGIN_X)/2, y2: marriage_y, style: LINE_STYLE)
 
-    render_children(svg, people, person.children(spouses.first), middle_x, child_y)
+    render_children(svg, people, person.children(spouses.first), middle_x, child_y, restriction, level, ref)
   when 2
-    svg.line(x1: middle_x, y1: 0, x2: middle_x, y2: MARGIN_Y, style: LINE_STYLE) unless is_root 
+    svg.line(x1: middle_x, y1: 0, x2: middle_x, y2: MARGIN_Y, style: LINE_STYLE) if level>0
     svg.g(transform: "translate(#{(xy.x-RECT_WIDTH)/2},#{MARGIN_Y})") {|g| render_rect(g, person) }
 
     svg.g(transform: "translate(#{middle_x-MARGIN_X-1.5*RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
@@ -82,8 +84,9 @@ def render_person(svg, people, ref, xy, is_root=false)
     svg.g(transform: "translate(#{middle_x+MARGIN_X+RECT_WIDTH/2},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
     svg.line(x1: middle_x+RECT_WIDTH/2, y1: marriage_y, x2: middle_x+RECT_WIDTH/2+MARGIN_X, y2: marriage_y, style: LINE_STYLE)
 
-    offset_x = render_children(svg, people, person.children(spouses.first), (xy.x-RECT_WIDTH-MARGIN_X)/2, child_y)
-    render_children(svg, people, person.children(spouses.last), (xy.x+RECT_WIDTH+MARGIN_X)/2, child_y-CHILD_LINES_DIFF_Y, offset_x)
+    offset_x = render_children(svg, people, person.children(spouses.first), (xy.x-RECT_WIDTH-MARGIN_X)/2, child_y, restriction, level, ref)
+    render_children(svg, people, person.children(spouses.last), (xy.x+RECT_WIDTH+MARGIN_X)/2, child_y-CHILD_LINES_DIFF_Y, 
+                    restriction, level, ref, offset_x)
   else
    'num of spouses > 2 not supported'    
   end
@@ -94,18 +97,18 @@ def render_rect(svg, person)
   svg.rect(x: 0, y: 0, rx: rounding, ry: rounding, width: RECT_WIDTH, height: RECT_HEIGHT, style: RECT_STYLE)
   svg.text(fill: TEXT_COLOR, 'text-anchor': 'middle') do |text|
     text.tspan(person.name, x: RECT_WIDTH/2, y: TEXT_NAME_Y, 'font-size': TEXT_NAME_SIZE)
-    text.tspan(person.livespan, x: RECT_WIDTH/2, y: TEXT_LIFE_Y, 'font-size': TEXT_LIFE_SIZE)
+    text.tspan(person.lifespan, x: RECT_WIDTH/2, y: TEXT_LIFE_Y, 'font-size': TEXT_LIFE_SIZE)
   end
 end
 
-def render_tree(people, root_ref)
+def render_tree(people, root_ref, restriction=[])
   output = ''
   xml = Builder::XmlMarkup.new(target: output, indent: 2)
   xml.instruct! :xml, version: '1.0', encoding: 'UTF-8'
 
   root_size = compute_size(people, root_ref)
   xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: root_size.x, height: root_size.y) do |svg|
-    render_person(svg, people, root_ref, root_size, true)
+    render_person(svg, people, root_ref, root_size, restriction)
   end
   output
 end

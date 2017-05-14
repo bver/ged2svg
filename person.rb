@@ -29,11 +29,11 @@ class Person
     spouse_ref.nil? ? @families.values.flatten : @families[spouse_ref]
   end
 
-  def livespan
+  def lifespan
     if @birth.nil?
       @death.nil? ? '' : "+ #{@death}"
     else  
-      @death.nil? ? "* #{@birth}" : "#{@birth} - #{@death}" 
+      @death.nil? ? "#{@birth}" : "#{@birth} - #{@death}" 
     end  
   end
 
