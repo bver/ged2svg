@@ -62,10 +62,10 @@ def find_trunk(people, root_ref, central_ref)
   paths = [ [central_ref] ]
   until paths.empty? 
     current = paths.pop
-    people[current.last].parents.each do |parent_ref|
+    people[current.first].parents.each do |parent_ref|
       extended = current.clone
-      extended << parent_ref
-      return extended.reverse if parent_ref == root_ref
+      extended.unshift parent_ref
+      return extended if parent_ref == root_ref
       paths.push extended
     end 
   end
