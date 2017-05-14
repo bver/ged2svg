@@ -4,7 +4,10 @@ require_relative 'person'
 def parse_ged filename
   mode, given, surname, sex, birth, death, ref, bd = nil, nil, nil, nil, nil, nil, nil, nil
   husband, wife, children = nil, nil, [] 
-  people = {}
+  people = {
+             '__?M?__' => Person.new('???', '', 'M', nil, nil),
+             '__?F?__' => Person.new('???', '', 'F', nil, nil)
+           }
   File.readlines(filename).each do |row|
     line = row.encode("UTF-16be", :invalid=>:replace, :replace=>"?").encode('UTF-8')
     level, token, *rest = line.chomp.split /\s+/
@@ -16,8 +19,14 @@ def parse_ged filename
       when :person
         people[ref] = Person.new(given, surname, sex, birth, death)
       when :family
-        people[husband].add_family(wife, children) unless husband.nil? 
-        people[wife].add_family(husband, children) unless wife.nil?
+        unless husband.nil?
+          wife = '__?F?__' if wife.nil?
+          people[husband].add_family(wife, children)
+        end
+        unless wife.nil?
+          husband = '__?M?__' if husband.nil?
+          people[wife].add_family(husband, children) unless wife.nil?
+        end
       end
 
       case rest
@@ -48,9 +57,9 @@ def parse_ged filename
       when 'DATE'
         case bd
         when :birth
-          birth = rest
+          birth = rest if level == 2
         when :death
-          death = rest
+          death = rest if level == 2
         end
         bd = nil
       when 'HUSB'

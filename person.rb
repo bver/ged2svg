@@ -42,17 +42,11 @@ class Person
     when 4
       return "#{@@pref[tokens.first]} #{tokens[1]}. #{@@months[tokens[2]]}. #{tokens.last}"
     when 3
-      if @@pref.has_key? tokens.first
-        return "#{@@pref[tokens.first]} #{@@months[tokens[1]]}. #{tokens.last}"
-      else
-        return "#{tokens.first}. #{@@months[tokens[1]]}. #{tokens.last}"
-      end  
+      return "#{@@pref[tokens.first]} #{@@months[tokens[1]]}. #{tokens.last}" if @@pref.has_key? tokens.first and @@months.has_key? tokens[1]
+      return "#{tokens.first}. #{@@months[tokens[1]]}. #{tokens.last}" if @@months.has_key? tokens[1]
     when 2
-      if @@pref.has_key? tokens.first
-        return "#{@@pref[tokens.first]} #{tokens.last}"
-      else
-        return "#{@@months[tokens.first]}. #{tokens.last}"
-      end  
+      return "#{@@pref[tokens.first]} #{tokens.last}" if @@pref.has_key? tokens.first
+      return "#{@@months[tokens.first]}. #{tokens.last}" if @@months.has_key? tokens.first
     else  
       return tokens.first        
     end
