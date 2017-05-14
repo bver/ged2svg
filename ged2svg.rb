@@ -19,7 +19,7 @@ people = {
   'ch2' => Person.new('Bohous', 'Ssuchmann', 'M', nil, nil),
   'ch3' => Person.new('Cilka', 'Ssuchmann', 'F', nil, nil)
 }
-people['root'].add_family('wife2', ['ch1', 'ch2', 'ch2', 'ch1'])
+people['root'].add_family('wife2', ['ch1', 'ch2', 'ch1'])
 people['root'].add_family('wife', ['ch3', 'ch1', 'ch2'])
 people['ch1'].add_family('ch2', ['ch2', 'ch2'])
 
