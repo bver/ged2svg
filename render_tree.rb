@@ -40,8 +40,9 @@ def render_children(svg, people, children, down_x, child_y, offset_x=0)
     children.each do |child_ref| 
         xy = compute_size(people, child_ref)
         svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref, xy) }
-        mid_point = (people[child_ref].spouses.size == 2) ? MARGIN_X + 1.5 * RECT_WIDTH : RECT_WIDTH/2
-        connect_points << (offset_x + MARGIN_X + mid_point)
+        #mid_point = (people[child_ref].spouses.size == 2) ? MARGIN_X + 1.5 * RECT_WIDTH : RECT_WIDTH/2
+        mid_point = (people[child_ref].spouses.size == 1) ? (xy.x - RECT_WIDTH - MARGIN_X)/2 : xy.x/2
+        connect_points << (offset_x + mid_point)
         offset_x += xy.x       
     end
     svg.line(x1: connect_points.min, y1: child_y, x2: connect_points.max, y2: child_y, style: LINE_STYLE) 
@@ -52,32 +53,66 @@ def render_person(svg, people, ref, xy)
   person = people[ref]
   raise "ref '#{ref}' not found" if person.nil? 
   spouses = person.spouses
-  raise 'num of spouses > 2 not supported' if spouses.size > 2
-  shift_x = (spouses.size == 2) ? MARGIN_X+RECT_WIDTH : 0 
+  #raise 'num of spouses > 2 not supported' if spouses.size > 2
 
-  mid_x = RECT_WIDTH/2 + MARGIN_X
-  mid_y = RECT_HEIGHT/2 + MARGIN_Y
-  svg.line(x1: mid_x+shift_x, y1: 0, x2: mid_x+shift_x, y2: MARGIN_Y, style: LINE_STYLE)
-  svg.g(transform: "translate(#{MARGIN_X+shift_x},#{MARGIN_Y})") {|g| render_rect(g, person) }
+  middle_x = xy.x/2
+  marriage_y = RECT_HEIGHT/2 + MARGIN_Y
+  child_y = RECT_HEIGHT + 2*MARGIN_Y 
+  case spouses.size
+  when 0
+    svg.line(x1: middle_x, y1: 0, x2: middle_x, y2: MARGIN_Y, style: LINE_STYLE)
+    svg.g(transform: "translate(#{(xy.x-RECT_WIDTH)/2},#{MARGIN_Y})") {|g| render_rect(g, person) }
+  when 1
+    connect_x = (xy.x - RECT_WIDTH - MARGIN_X) / 2
+    svg.line(x1: connect_x, y1: 0, x2: connect_x, y2: MARGIN_Y, style: LINE_STYLE)
+    svg.g(transform: "translate(#{connect_x-RECT_WIDTH/2},#{MARGIN_Y})") {|g| render_rect(g, person) }
 
-  child_y = 2*mid_y
-  down_x = 1.5 * MARGIN_X + RECT_WIDTH
-  start_x = 0
- 
-  if spouses.size > 0
-    svg.g(transform: "translate(#{MARGIN_X*2+RECT_WIDTH+shift_x},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
-    svg.line(x1: MARGIN_X+RECT_WIDTH+shift_x, y1: mid_y, x2: 2*MARGIN_X+RECT_WIDTH+shift_x, y2: mid_y, style: LINE_STYLE)
+    svg.g(transform: "translate(#{(xy.x+MARGIN_X)/2},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
+    svg.line(x1: (xy.x-MARGIN_X)/2, y1: marriage_y, x2: (xy.x+MARGIN_X)/2, y2: marriage_y, style: LINE_STYLE)
 
-    start_x = render_children(svg, people, person.children(spouses.first), down_x, child_y)
-  end
+    render_children(svg, people, person.children(spouses.first), middle_x, child_y)
+  when 2
+    svg.line(x1: middle_x, y1: 0, x2: middle_x, y2: MARGIN_Y, style: LINE_STYLE)
+    svg.g(transform: "translate(#{(xy.x-RECT_WIDTH)/2},#{MARGIN_Y})") {|g| render_rect(g, person) }
 
-  if spouses.size == 2
-    svg.g(transform: "translate(#{shift_x-RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
-    svg.line(x1: shift_x, y1: mid_y, x2: MARGIN_X+shift_x, y2: mid_y, style: LINE_STYLE)
+    svg.g(transform: "translate(#{middle_x-MARGIN_X-1.5*RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
+    svg.line(x1: middle_x-RECT_WIDTH/2-MARGIN_X, y1: marriage_y, x2: middle_x-RECT_WIDTH/2, y2: marriage_y, style: LINE_STYLE)
 
-    render_children(svg, people, person.children(spouses.last), (1.5 * MARGIN_X + RECT_WIDTH)+shift_x, child_y-CHILD_LINES_DIFF_Y, start_x)
+    svg.g(transform: "translate(#{middle_x+MARGIN_X+RECT_WIDTH/2},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
+    svg.line(x1: middle_x+RECT_WIDTH/2, y1: marriage_y, x2: middle_x+RECT_WIDTH/2+MARGIN_X, y2: marriage_y, style: LINE_STYLE)
+
+    offset_x = render_children(svg, people, person.children(spouses.first), (xy.x-RECT_WIDTH-MARGIN_X)/2, child_y)
+    render_children(svg, people, person.children(spouses.first), (xy.x+RECT_WIDTH+MARGIN_X)/2, child_y-CHILD_LINES_DIFF_Y, offset_x)
+  else
+   'num of spouses > 2 not supported'    
   end
 end
+
+#  shift_x = (spouses.size == 2) ? MARGIN_X+RECT_WIDTH : 0 
+
+#  mid_x = RECT_WIDTH/2 + MARGIN_X
+#  mid_y = RECT_HEIGHT/2 + MARGIN_Y
+#  svg.line(x1: mid_x+shift_x, y1: 0, x2: mid_x+shift_x, y2: MARGIN_Y, style: LINE_STYLE)
+#  svg.g(transform: "translate(#{MARGIN_X+shift_x},#{MARGIN_Y})") {|g| render_rect(g, person) }
+
+#  child_y = 2*mid_y
+#  down_x = 1.5 * MARGIN_X + RECT_WIDTH
+#  start_x = 0
+ 
+#  if spouses.size > 0
+#    svg.g(transform: "translate(#{MARGIN_X*2+RECT_WIDTH+shift_x},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.first]) }
+#    svg.line(x1: MARGIN_X+RECT_WIDTH+shift_x, y1: mid_y, x2: 2*MARGIN_X+RECT_WIDTH+shift_x, y2: mid_y, style: LINE_STYLE)
+
+#    start_x = render_children(svg, people, person.children(spouses.first), down_x, child_y)
+#  end
+
+#  if spouses.size == 2
+#    svg.g(transform: "translate(#{shift_x-RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
+#    svg.line(x1: shift_x, y1: mid_y, x2: MARGIN_X+shift_x, y2: mid_y, style: LINE_STYLE)
+
+#    render_children(svg, people, person.children(spouses.last), (1.5 * MARGIN_X + RECT_WIDTH)+shift_x, child_y-CHILD_LINES_DIFF_Y, start_x)
+#  end
+#end
 
 def render_rect(svg, person)
   rounding = (person.sex == :male) ? 0 : RECT_ROUND 
