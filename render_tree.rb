@@ -19,15 +19,16 @@ LINE_STYLE = 'stroke:black;stroke-width:2'
 
 XY = Struct.new(:x, :y)
 
-class Restriction < Struct.new(:trunk, :level, :current_ref)
+class Restriction < Struct.new(:trunk, :level, :current_ref, :offset)
   def prune?
     self.level < self.trunk.size and not self.trunk.include? self.current_ref 
   end
   def ancient?
     self.level < self.trunk.size - 1
   end
-  def advance new_ref
-    Restriction.new(self.trunk, self.level+1, new_ref)
+  def advance(new_ref, offset_x=nil)
+    new_offset = offset_x.nil? ? self.offset : offset_x 
+    Restriction.new(self.trunk, self.level+1, new_ref, new_offset)
   end
   def is_root?
     self.level == 0
@@ -39,7 +40,7 @@ def compute_size(people, ref, restriction, shallow=false)
   raise "ref '#{ref}' not found" if person.nil? 
   person_size = XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
                        RECT_HEIGHT + 2 * MARGIN_Y)
-  children = person.children 
+  children = person.children
   return person_size if children.empty?
   
   children_xy = children.map {|child_ref| compute_size(people, child_ref, restriction.advance(child_ref), restriction.ancient?) }
@@ -61,9 +62,11 @@ def render_children(svg, people, children, down_x, child_y, restriction, offset_
     connect_points = [ down_x ]
     children.each do |child_ref| 
         xy = compute_size(people, child_ref, restriction, restriction.ancient?)
-        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref, xy, restriction.advance(child_ref)) }
+        reset_offset = offset_x
+        reset_offset -= restriction.offset if restriction.ancient?
+        svg.g(transform: "translate(#{reset_offset},#{child_y})") {|g| render_person(g, people, child_ref, xy, restriction.advance(child_ref, offset_x)) }
         mid_point = (people[child_ref].spouses.size == 1) ? (xy.x - RECT_WIDTH - MARGIN_X)/2 : xy.x/2
-        connect_points << (offset_x + mid_point)
+        connect_points << (reset_offset + mid_point)
         offset_x += xy.x
     end
     svg.line(x1: connect_points.min, y1: child_y, x2: connect_points.max, y2: child_y, style: LINE_STYLE)
@@ -123,7 +126,7 @@ def render_tree(people, root_ref, trunk=[])
   xml = Builder::XmlMarkup.new(target: output, indent: 2)
   xml.instruct! :xml, version: '1.0', encoding: 'UTF-8'
 
-  restriction = Restriction.new(trunk, 0, root_ref)
+  restriction = Restriction.new(trunk, 0, root_ref, 0)
   root_size = compute_size(people, root_ref, restriction)
   xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: root_size.x, height: root_size.y) do |svg|
     render_person(svg, people, root_ref, root_size, restriction)
