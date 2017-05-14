@@ -1,6 +1,6 @@
 
 class Person
-  attr_reader :name, :sex, :birth, :death, :families 
+  attr_reader :name, :sex, :birth, :death, :families, :parents 
   
   def initialize(given, surname, sex, birth, death)
     @name = given.nil? ? '' : given
@@ -9,10 +9,15 @@ class Person
     @birth = Person.parse_date birth
     @death = Person.parse_date death
     @families = {}
+    @parents = []
   end
   
+  def add_parent parent_ref
+    @parents << parent_ref unless parent_ref.nil?
+  end
+
   def add_family(spouse_ref, children_refs)
-    raise 'unknown spouse' if spouse_ref.nil? # TODO
+    raise 'unknown spouse' if spouse_ref.nil?
     @families[spouse_ref] = children_refs.clone unless spouse_ref.nil?
   end
 
@@ -51,5 +56,19 @@ class Person
       return tokens.first        
     end
   end
+end
+
+def find_trunk(people, root_ref, central_ref)
+  paths = [ [central_ref] ]
+  until paths.empty? 
+    current = paths.pop
+    people[current.last].parents.each do |parent_ref|
+      extended = current.clone
+      extended << parent_ref
+      return extended.reverse if parent_ref == root_ref
+      paths.push extended
+    end 
+  end
+  raise 'cannot find trunk'
 end
 

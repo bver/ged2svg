@@ -19,6 +19,11 @@ def parse_ged filename
       when :person
         people[ref] = Person.new(given, surname, sex, birth, death)
       when :family
+        children.each do |child_ref| 
+          child = people[child_ref]
+          child.add_parent husband
+          child.add_parent wife
+        end
         unless husband.nil?
           wife = '__?F?__' if wife.nil?
           people[husband].add_family(wife, children)
