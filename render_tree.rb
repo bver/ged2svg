@@ -42,11 +42,7 @@ def compute_size(people, ref, restriction, shallow=false)
   children = person.children 
   return person_size if children.empty?
   
-  children_xy = []
-  children.each do |child_ref| 
-    children_xy << compute_size(people, child_ref, restriction.advance(child_ref), restriction.ancient?)
-  end
-  return person_size if children_xy.empty?
+  children_xy = children.map {|child_ref| compute_size(people, child_ref, restriction.advance(child_ref), restriction.ancient?) }
   ch_x = children_xy.inject(0) {|sum, xy| sum + xy.x }
   max_x = children_xy.max {|a, b| a.x <=> b.x }
   max_y = children_xy.max {|a, b| a.y <=> b.y } 
