@@ -5,7 +5,7 @@ require_relative 'person'
 RECT_WIDTH = 150
 RECT_HEIGHT = 40
 MARGIN_X = 20
-MARGIN_Y = 20
+MARGIN_Y = 35
 RECT_STYLE = 'fill:lavender;stroke:black'
 RECT_ROUND = 5
 TEXT_COLOR = 'black'
@@ -13,7 +13,8 @@ TEXT_NAME_SIZE = 13
 TEXT_LIFE_SIZE = 9 
 TEXT_NAME_Y = RECT_HEIGHT*3/7 
 TEXT_LIFE_Y = RECT_HEIGHT*6/7
-CHILD_LINES_DIFF_Y = 5
+CHILD_LINES_DIFF_Y = 10
+RESTRICT_DOWN_Y = 10
 LINE_STYLE = 'stroke:black;stroke-width:2'
 
 XY = Struct.new(:x, :y)
@@ -21,6 +22,9 @@ XY = Struct.new(:x, :y)
 class Restriction < Struct.new(:trunk, :level, :current_ref)
   def prune?
     self.level < self.trunk.size and not self.trunk.include? self.current_ref 
+  end
+  def ancient?
+    self.level < self.trunk.size - 1
   end
   def advance new_ref
     Restriction.new(self.trunk, self.level+1, new_ref)
@@ -30,31 +34,37 @@ class Restriction < Struct.new(:trunk, :level, :current_ref)
   end
 end
 
-def compute_size(people, ref)
+def compute_size(people, ref, restriction, shallow=false)
   person = people[ref]
   raise "ref '#{ref}' not found" if person.nil? 
   person_size = XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
                        RECT_HEIGHT + 2 * MARGIN_Y)
   children = person.children 
   return person_size if children.empty?
-
-  children_xy = children.map {|child_ref| compute_size(people, child_ref) }
-  ch_x = children_xy.inject(0) {|sum, xy| sum + xy.x } 
-  max_xy = children_xy.max {|a, b| a.y <=> b.y }
-  XY.new( [person_size.x, ch_x].max, person_size.y + max_xy.y )
+  
+  children_xy = []
+  children.each do |child_ref| 
+    children_xy << compute_size(people, child_ref, restriction.advance(child_ref), restriction.ancient?)
+  end
+  return person_size if children_xy.empty?
+  ch_x = children_xy.inject(0) {|sum, xy| sum + xy.x }
+  max_x = children_xy.max {|a, b| a.x <=> b.x }
+  max_y = children_xy.max {|a, b| a.y <=> b.y } 
+  shallow ? XY.new( [person_size.x, max_x.x].max, person_size.y + max_y.y ) : XY.new( [person_size.x, ch_x].max, person_size.y + max_y.y )
 end 
 
 def render_children(svg, people, children, down_x, child_y, restriction, offset_x=0)
     return offset_x if children.empty?
     # center a single child ... make sure it does not cause colisions with other spouse's children
-    offset_x = [offset_x, down_x-RECT_WIDTH/2-MARGIN_X].max if children.size == 1 and people[children.first].children.empty? 
-    svg.line(x1: down_x, y1: RECT_HEIGHT/2 + MARGIN_Y, x2: down_x, y2: child_y, style: LINE_STYLE)
+    offset_x = [offset_x, down_x-RECT_WIDTH/2-MARGIN_X].max if children.size == 1 and people[children.first].children.empty?
+    down_y = RECT_HEIGHT/2 + MARGIN_Y 
+    svg.line(x1: down_x, y1: down_y, x2: down_x, y2: (restriction.prune? ? (down_y + RESTRICT_DOWN_Y) : child_y), style: LINE_STYLE)
 
     return offset_x if restriction.prune? 
 
     connect_points = [ down_x ]
     children.each do |child_ref| 
-        xy = compute_size(people, child_ref)
+        xy = compute_size(people, child_ref, restriction, restriction.ancient?)
         svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref, xy, restriction.advance(child_ref)) }
         mid_point = (people[child_ref].spouses.size == 1) ? (xy.x - RECT_WIDTH - MARGIN_X)/2 : xy.x/2
         connect_points << (offset_x + mid_point)
@@ -117,9 +127,10 @@ def render_tree(people, root_ref, trunk=[])
   xml = Builder::XmlMarkup.new(target: output, indent: 2)
   xml.instruct! :xml, version: '1.0', encoding: 'UTF-8'
 
-  root_size = compute_size(people, root_ref)
+  restriction = Restriction.new(trunk, 0, root_ref)
+  root_size = compute_size(people, root_ref, restriction)
   xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: root_size.x, height: root_size.y) do |svg|
-    render_person(svg, people, root_ref, root_size, Restriction.new(trunk, 0, root_ref))
+    render_person(svg, people, root_ref, root_size, restriction)
   end
   output
 end
