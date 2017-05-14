@@ -12,6 +12,7 @@ class Person
   end
   
   def add_family(spouse_ref, children_refs)
+    raise 'unknown spouse' if spouse_ref.nil? # TODO
     @families[spouse_ref] = children_refs.clone unless spouse_ref.nil?
   end
 

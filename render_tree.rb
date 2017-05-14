@@ -39,15 +39,16 @@ def render_children(svg, people, children, down_x, child_y, offset_x=0)
     connect_points = [ down_x ]
     children.each do |child_ref| 
         xy = compute_size(people, child_ref)
-        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref) }       
-        connect_points << (offset_x + MARGIN_X + ((people[child_ref].spouses.size == 2) ? MARGIN_X + 1.5 * RECT_WIDTH : RECT_WIDTH/2))
+        svg.g(transform: "translate(#{offset_x},#{child_y})") {|g| render_person(g, people, child_ref, xy) }
+        mid_point = (people[child_ref].spouses.size == 2) ? MARGIN_X + 1.5 * RECT_WIDTH : RECT_WIDTH/2
+        connect_points << (offset_x + MARGIN_X + mid_point)
         offset_x += xy.x       
     end
     svg.line(x1: connect_points.min, y1: child_y, x2: connect_points.max, y2: child_y, style: LINE_STYLE) 
     offset_x
 end
 
-def render_person(svg, people, ref)
+def render_person(svg, people, ref, xy)
   person = people[ref]
   raise "ref '#{ref}' not found" if person.nil? 
   spouses = person.spouses
@@ -74,7 +75,7 @@ def render_person(svg, people, ref)
     svg.g(transform: "translate(#{shift_x-RECT_WIDTH},#{MARGIN_Y})") {|g| render_rect(g, people[spouses.last]) }
     svg.line(x1: shift_x, y1: mid_y, x2: MARGIN_X+shift_x, y2: mid_y, style: LINE_STYLE)
 
-    render_children(svg, people, person.children(spouses.last), down_x+shift_x, child_y-CHILD_LINES_DIFF_Y, start_x)
+    render_children(svg, people, person.children(spouses.last), (1.5 * MARGIN_X + RECT_WIDTH)+shift_x, child_y-CHILD_LINES_DIFF_Y, start_x)
   end
 end
 
@@ -94,7 +95,7 @@ def render_tree(people, root_ref)
 
   root_size = compute_size(people, root_ref)
   xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: root_size.x, height: root_size.y) do |svg|
-    render_person(svg, people, root_ref)
+    render_person(svg, people, root_ref, root_size)
   end
   output
 end
