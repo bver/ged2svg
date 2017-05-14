@@ -3,8 +3,14 @@
 require_relative 'parse_ged'
 require_relative 'render_tree'
 
-abort "Usage:\n #$0 root_ref central_ref file.ged file.svg" unless ARGV.size == 4
-root_ref, central_ref, file_ged, file_svg = ARGV
+case ARGV.size
+when 4
+  root_ref, central_ref, file_ged, file_svg = ARGV
+when 3
+  root_ref, file_ged, file_svg = ARGV
+else
+  abort "Usage:\n #$0 root_ref [central_ref] file.ged file.svg"
+end
 
 people = parse_ged file_ged
 #people.each_value {|p| puts p.birth; puts p.death }
@@ -23,7 +29,7 @@ people = parse_ged file_ged
 #people['root'].add_family('wife', ['ch3', 'ch1', 'ch2'])
 #people['ch1'].add_family('ch2', ['ch2', 'ch2'])
 
-trunk = find_trunk(people, root_ref, central_ref)
+trunk = central_ref.nil? ? [] : find_trunk(people, root_ref, central_ref)
 $stderr.puts trunk.join ' '
 
 File.open(file_svg, 'w') {|f| f.puts render_tree(people, root_ref, trunk) }
