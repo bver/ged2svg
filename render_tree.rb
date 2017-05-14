@@ -82,7 +82,7 @@ def render_person(svg, people, ref, xy)
     svg.line(x1: middle_x+RECT_WIDTH/2, y1: marriage_y, x2: middle_x+RECT_WIDTH/2+MARGIN_X, y2: marriage_y, style: LINE_STYLE)
 
     offset_x = render_children(svg, people, person.children(spouses.first), (xy.x-RECT_WIDTH-MARGIN_X)/2, child_y)
-    render_children(svg, people, person.children(spouses.first), (xy.x+RECT_WIDTH+MARGIN_X)/2, child_y-CHILD_LINES_DIFF_Y, offset_x)
+    render_children(svg, people, person.children(spouses.last), (xy.x+RECT_WIDTH+MARGIN_X)/2, child_y-CHILD_LINES_DIFF_Y, offset_x)
   else
    'num of spouses > 2 not supported'    
   end
