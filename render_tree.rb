@@ -6,6 +6,7 @@ RECT_WIDTH = 150
 RECT_HEIGHT = 40
 MARGIN_X = 20
 MARGIN_Y = 35
+PRUNE_MARGIN_X = 300
 RECT_STYLE = 'fill:lavender;stroke:black'
 RECT_ROUND = 5
 TEXT_COLOR = 'black'
@@ -33,6 +34,9 @@ class Restriction < Struct.new(:trunk, :level, :current_ref, :offset)
   def is_root?
     self.level == 0
   end
+  def on_trunk? ref
+    self.trunk.include? ref
+  end
 end
 
 def compute_size(people, ref, restriction, shallow=false)
@@ -41,7 +45,12 @@ def compute_size(people, ref, restriction, shallow=false)
   person_size = XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
                        RECT_HEIGHT + 2 * MARGIN_Y)
   children = person.children
-  return person_size if children.empty? or restriction.ancient?
+  return person_size if children.empty?
+  
+  if restriction.ancient?
+    person_size.x += PRUNE_MARGIN_X if restriction.on_trunk? ref 
+    return person_size
+  end
   
   children_xy = children.map {|child_ref| compute_size(people, child_ref, restriction.advance(child_ref), restriction.ancient?) }
   ch_x = children_xy.inject(0) {|sum, xy| sum + xy.x }
