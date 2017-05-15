@@ -39,7 +39,7 @@ class Restriction < Struct.new(:trunk, :level, :current_ref, :offset)
   end
 end
 
-def compute_size(people, ref, restriction, shallow=false)
+def compute_size(people, ref, restriction)
   person = people[ref]
   raise "ref '#{ref}' not found" if person.nil? 
   person_size = XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
@@ -52,11 +52,10 @@ def compute_size(people, ref, restriction, shallow=false)
     return person_size
   end
   
-  children_xy = children.map {|child_ref| compute_size(people, child_ref, restriction.advance(child_ref), restriction.ancient?) }
+  children_xy = children.map {|child_ref| compute_size(people, child_ref, restriction.advance(child_ref)) }
   ch_x = children_xy.inject(0) {|sum, xy| sum + xy.x }
-  max_x = children_xy.max {|a, b| a.x <=> b.x }
-  max_y = children_xy.max {|a, b| a.y <=> b.y } 
-  shallow ? XY.new( [person_size.x, max_x.x].max, person_size.y + max_y.y ) : XY.new( [person_size.x, ch_x].max, person_size.y + max_y.y )
+  max_y = children_xy.max {|a, b| a.y <=> b.y }
+  XY.new( [person_size.x, ch_x].max, person_size.y + max_y.y )
 end 
 
 def render_children(svg, people, children, down_x, child_y, restriction, offset_x=0)
@@ -70,7 +69,7 @@ def render_children(svg, people, children, down_x, child_y, restriction, offset_
 
     connect_points = [ down_x ]
     children.each do |child_ref| 
-        xy = compute_size(people, child_ref, restriction, restriction.ancient?)
+        xy = compute_size(people, child_ref, restriction)
         reset_offset = offset_x
         reset_offset -= restriction.offset if restriction.ancient?
         svg.g(transform: "translate(#{reset_offset},#{child_y})") {|g| render_person(g, people, child_ref, xy, restriction.advance(child_ref, offset_x)) }
@@ -136,7 +135,7 @@ def render_tree(people, root_ref, trunk=[])
   xml.instruct! :xml, version: '1.0', encoding: 'UTF-8'
 
   restriction = Restriction.new(trunk, 0, root_ref, 0)
-  root_size = compute_size(people, root_ref, restriction, restriction.ancient?)
+  root_size = compute_size(people, root_ref, restriction)
   xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: root_size.x, height: root_size.y) do |svg|
     render_person(svg, people, root_ref, root_size, restriction)
   end
