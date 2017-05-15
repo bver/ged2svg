@@ -58,6 +58,28 @@ def compute_size(people, ref, restriction)
   XY.new( [person_size.x, ch_x].max, person_size.y + max_y.y )
 end 
 
+def bounding_box(people, ref, restriction)
+  person = people[ref]
+  raise "ref '#{ref}' not found" if person.nil? 
+  person_size = XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
+                       RECT_HEIGHT + 2 * MARGIN_Y)
+  children = person.children
+  return person_size if children.empty?
+
+  if restriction.ancient?
+    main = children.find_all {|child_ref| restriction.on_trunk? child_ref }
+    raise 'assert on_trunk?' unless main.size == 1
+    bb = bounding_box(people, main.first, restriction.advance(main.first))
+    bb.y += person_size.y
+    bb
+  else
+    children_xy = children.map {|child_ref| bounding_box(people, child_ref, restriction.advance(child_ref)) }
+    sum = children_xy.inject(0) {|sum, xy| sum + xy.x }
+    max_y = children_xy.max {|a, b| a.y <=> b.y }   
+    XY.new( [person_size.x, sum].max, person_size.y + max_y.y )
+  end
+end 
+
 def render_children(svg, people, children, down_x, child_y, restriction, offset_x=0)
     return offset_x if children.empty?
     # center a single child ... make sure it does not cause colisions with other spouse's children
@@ -135,9 +157,9 @@ def render_tree(people, root_ref, trunk=[])
   xml.instruct! :xml, version: '1.0', encoding: 'UTF-8'
 
   restriction = Restriction.new(trunk, 0, root_ref, 0)
-  root_size = compute_size(people, root_ref, restriction)
-  xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: root_size.x, height: root_size.y) do |svg|
-    render_person(svg, people, root_ref, root_size, restriction)
+  bbox = bounding_box(people, root_ref, restriction)
+  xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: bbox.x, height: bbox.y) do |svg|
+    render_person(svg, people, root_ref, compute_size(people, root_ref, restriction), restriction)
   end
   output
 end
