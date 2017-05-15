@@ -41,7 +41,7 @@ def compute_size(people, ref, restriction, shallow=false)
   person_size = XY.new(RECT_WIDTH + 2 * MARGIN_X + person.spouses.size * (RECT_WIDTH + MARGIN_X), 
                        RECT_HEIGHT + 2 * MARGIN_Y)
   children = person.children
-  return person_size if children.empty?
+  return person_size if children.empty? or restriction.ancient?
   
   children_xy = children.map {|child_ref| compute_size(people, child_ref, restriction.advance(child_ref), restriction.ancient?) }
   ch_x = children_xy.inject(0) {|sum, xy| sum + xy.x }
@@ -127,7 +127,7 @@ def render_tree(people, root_ref, trunk=[])
   xml.instruct! :xml, version: '1.0', encoding: 'UTF-8'
 
   restriction = Restriction.new(trunk, 0, root_ref, 0)
-  root_size = compute_size(people, root_ref, restriction)
+  root_size = compute_size(people, root_ref, restriction, restriction.ancient?)
   xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: root_size.x, height: root_size.y) do |svg|
     render_person(svg, people, root_ref, root_size, restriction)
   end
