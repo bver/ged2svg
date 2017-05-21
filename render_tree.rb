@@ -5,7 +5,7 @@ require_relative 'person'
 RECT_WIDTH = 150
 RECT_HEIGHT = 60
 MARGIN_X = 20
-MARGIN_Y = 50
+MARGIN_Y = 80
 PRUNE_MARGIN_X = 300
 RECT_STYLE = 'fill:lavender;stroke:black;stroke-width:2'
 RECT_ROUND_MALE = 1
@@ -15,11 +15,12 @@ TEXT_LIFE_SIZE = 10
 TEXT_NAME_Y = RECT_HEIGHT*3/7 
 TEXT_LIFE_Y = RECT_HEIGHT*5/7
 TEXT_STYLE = 'fill:black;font-family:Free Serif'
-CHILD_LINES_DIFF_Y = 20
+CHILD_LINES_DIFF_Y = 25
 RESTRICT_DOWN_Y = 35
 LINE_STYLE = 'stroke:black;stroke-width:2;stroke-linecap:round'
 INNER_BOX_DIFF = 3 # comment out for single-line boxes
 INNER_RECT_STYLE = 'fill:lavender;stroke:lightgray;stroke-width:1'
+DOCUMENT_MARGIN_X = 70
 
 XY = Struct.new(:x, :y)
 
@@ -163,8 +164,12 @@ def render_tree(people, root_ref, trunk=[])
 
   restriction = Restriction.new(trunk, 0, root_ref, 0)
   bbox = bounding_box(people, root_ref, restriction)
-  xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: bbox.x, height: bbox.y) do |svg|
-    render_person(svg, people, root_ref, compute_size(people, root_ref, restriction), restriction)
+  margin_y = ([0, bbox.x/Math.sqrt(2.0) - bbox.y].max / 2.0).round
+  # $stderr.puts "Y margin : #{margin_y}"
+  xml.svg(xmlns: 'http://www.w3.org/2000/svg', version: '1.1', width: bbox.x+2*DOCUMENT_MARGIN_X, height: bbox.y+2*margin_y) do |svg|
+    svg.g(transform: "translate(#{DOCUMENT_MARGIN_X},#{margin_y})") do |g|
+      render_person(g, people, root_ref, compute_size(people, root_ref, restriction), restriction)
+    end
   end
   output
 end
