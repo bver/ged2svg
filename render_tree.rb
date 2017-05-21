@@ -3,19 +3,19 @@ require 'builder'
 require_relative 'person'
 
 RECT_WIDTH = 150
-RECT_HEIGHT = 40
+RECT_HEIGHT = 60
 MARGIN_X = 20
-MARGIN_Y = 35
+MARGIN_Y = 50
 PRUNE_MARGIN_X = 300
 RECT_STYLE = 'fill:lavender;stroke:black'
-RECT_ROUND = 5
+RECT_ROUND = 10
 TEXT_COLOR = 'black'
 TEXT_NAME_SIZE = 13
 TEXT_LIFE_SIZE = 9 
 TEXT_NAME_Y = RECT_HEIGHT*3/7 
 TEXT_LIFE_Y = RECT_HEIGHT*6/7
-CHILD_LINES_DIFF_Y = 10
-RESTRICT_DOWN_Y = 10
+CHILD_LINES_DIFF_Y = 20
+RESTRICT_DOWN_Y = 35
 LINE_STYLE = 'stroke:black;stroke-width:2'
 
 XY = Struct.new(:x, :y)
