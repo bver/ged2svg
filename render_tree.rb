@@ -1,4 +1,7 @@
 
+# (c) 2017 Pavel Suchmann <pavel@suchmann.cz>
+# Licensed under the terms of the GNU GPL version 3 (or later)
+
 require 'builder'
 require_relative 'person'
 

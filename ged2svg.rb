@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+# (c) 2017 Pavel Suchmann <pavel@suchmann.cz>
+# Licensed under the terms of the GNU GPL version 3 (or later)
+
 require_relative 'parse_ged'
 require_relative 'render_tree'
 
