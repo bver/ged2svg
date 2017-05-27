@@ -3,9 +3,11 @@
 # Licensed under the terms of the GNU GPL version 3 (or later)
 
 class Person
-  attr_reader :name, :sex, :birth, :death, :families, :parents 
+  attr_reader :name, :sex, :birth, :death, :families, :parents, :given, :surname 
   
   def initialize(given, surname, sex, birth, death)
+    @given = given
+    @surname = surname 
     @name = given.nil? ? '' : given
     @name = surname.nil? ? @name : "#{@name} #{surname}"
     @sex = (sex == 'M') ? :male : :female 

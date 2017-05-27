@@ -5,20 +5,21 @@
 require 'builder'
 require_relative 'person'
 
-RECT_WIDTH = 150
+RECT_WIDTH = 100
 RECT_HEIGHT = 60
 MARGIN_X = 20
-MARGIN_Y = 80
+MARGIN_Y = 50
 PRUNE_MARGIN_X = 300
 RECT_STYLE = 'fill:lavender;stroke:black;stroke-width:2'
 RECT_ROUND_MALE = 1
 RECT_ROUND_FEMALE = 10
-TEXT_NAME_SIZE = 13
-TEXT_LIFE_SIZE = 10
-TEXT_NAME_Y = RECT_HEIGHT*3/7 
-TEXT_LIFE_Y = RECT_HEIGHT*5/7
-TEXT_STYLE = 'fill:black;font-family:Free Serif'
-CHILD_LINES_DIFF_Y = 25
+TEXT_NAME_SIZE = 12
+TEXT_LIFE_SIZE = 8
+TEXT_NAME_Y = RECT_HEIGHT*2/7 
+TEXT_NAME2_Y = RECT_HEIGHT*4/7
+TEXT_LIFE_Y = RECT_HEIGHT*6/7
+TEXT_STYLE = 'fill:black;font-family:FreeSerif'
+CHILD_LINES_DIFF_Y = 20
 RESTRICT_DOWN_Y = 35
 LINE_STYLE = 'stroke:black;stroke-width:2;stroke-linecap:round'
 INNER_BOX_DIFF = 3 # comment out for single-line boxes
@@ -155,7 +156,9 @@ def render_rect(svg, person)
   svg.rect(x: INNER_BOX_DIFF, y: INNER_BOX_DIFF, rx: rounding-INNER_BOX_DIFF, ry: rounding-INNER_BOX_DIFF,
            width: RECT_WIDTH-2*INNER_BOX_DIFF, height: RECT_HEIGHT-2*INNER_BOX_DIFF, style: INNER_RECT_STYLE) unless INNER_BOX_DIFF.nil?
   svg.text('text-anchor': 'middle', 'style': TEXT_STYLE) do |text|
-    text.tspan(person.name, x: RECT_WIDTH/2, y: TEXT_NAME_Y, 'font-size': TEXT_NAME_SIZE)
+    text.tspan(person.given, x: RECT_WIDTH/2, y: TEXT_NAME_Y, 'font-size': TEXT_NAME_SIZE)
+    text.tspan(person.surname, x: RECT_WIDTH/2, y: TEXT_NAME2_Y, 'font-size': TEXT_NAME_SIZE)   
+#    text.tspan(person.name, x: RECT_WIDTH/2, y: TEXT_NAME_Y, 'font-size': TEXT_NAME_SIZE)
     text.tspan(person.lifespan, x: RECT_WIDTH/2, y: TEXT_LIFE_Y, 'font-size': TEXT_LIFE_SIZE)
   end
 end
