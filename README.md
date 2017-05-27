@@ -2,7 +2,7 @@
 # Rendering GED files to family trees 
 
 This tool takes a file in the [GEDCOM](https://en.wikipedia.org/wiki/GEDCOM) format produced by a genealogic software 
-and produces a family tree in the [Scalable Vetor Graphic](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) 
+and generates a family tree in the [Scalable Vector Graphic](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics)
 format suitable for later editing and printing.
 
 ## Installation
@@ -17,7 +17,8 @@ Simply clone this repo and:
 
 ## Usage
 
-Since rich family trees are hard to render some pruning trade-ofs were necessary. 
+Since rich family trees are hard to render some pruning trade-ofs were necessary. Therefore the 'trunk' of the family
+tree should be provioded together with filenames:
 
         ./ged2svg.rb  '@I500339@'  '@I500005@'  family.ged  output.svg
 
