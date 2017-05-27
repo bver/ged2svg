@@ -1,5 +1,5 @@
 
-# Rendering GED files to family trees 
+# Rendering GED files as family trees 
 
 This tool takes a file in the [GEDCOM](https://en.wikipedia.org/wiki/GEDCOM) format produced by a genealogic software 
 and generates a family tree in the [Scalable Vector Graphic](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics)
