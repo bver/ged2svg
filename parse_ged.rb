@@ -6,7 +6,7 @@ require_relative 'person'
 
 def parse_ged filename
   mode, given, surname, sex, birth, death, ref, bd = nil, nil, nil, nil, nil, nil, nil, nil
-  husband, wife, children = nil, nil, [] 
+  husband, wife, children = nil, nil, []
   people = {
              '__?M?__' => Person.new('???', '', 'M', nil, nil),
              '__?F?__' => Person.new('???', '', 'F', nil, nil)
@@ -16,13 +16,13 @@ def parse_ged filename
     level, token, *rest = line.chomp.split /\s+/
     rest = rest.join ' '
     level = level.to_i
- 
+
     if level == 0
       case mode
       when :person
         people[ref] = Person.new(given, surname, sex, birth, death)
       when :family
-        children.each do |child_ref| 
+        children.each do |child_ref|
           child = people[child_ref]
           child.add_parent husband
           child.add_parent wife
@@ -33,7 +33,7 @@ def parse_ged filename
         end
         unless wife.nil?
           husband = '__?M?__' if husband.nil?
-          people[wife].add_family(husband, children) unless wife.nil?
+          people[wife].add_family(husband, children)
         end
       end
 
@@ -47,7 +47,7 @@ def parse_ged filename
       else
         mode = nil
       end
-      ref = token     
+      ref = token
     else
       case token
       when 'GIVN'
@@ -81,4 +81,3 @@ def parse_ged filename
   end
   people
 end
-

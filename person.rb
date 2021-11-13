@@ -4,7 +4,17 @@
 
 require 'date'
 
-DateRange = Struct.new(:from, :to)  # <from, to)
+DateRange = Struct.new(:from, :to) do # <from, to)
+  def to_s
+    return "?" if from.nil? and to.nil?
+    return from.to_s if from and from.next_day() == to
+    "#{from}-#{to}"
+  end
+  def after other
+    return false if other.nil? or self.to.nil? or other.from.nil?
+    (self.to <=> other.from) == 1  # -1 <, 1 >
+  end
+end
 
 class Person
   attr_reader :name, :sex, :birth, :death, :families, :parents, :given, :surname, :birth_range, :death_range
