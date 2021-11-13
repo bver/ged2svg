@@ -5,7 +5,7 @@
 require_relative 'person'
 
 def parse_ged filename
-  mode, given, surname, sex, birth, death, ref, bd = nil, nil, nil, nil, nil, nil, nil, nil
+  mode, given, surname, sex, birth, death, ref, bd, marriage = nil, nil, nil, nil, nil, nil, nil, nil, nil
   husband, wife, children = nil, nil, []
   people = {
              '__?M?__' => Person.new('???', '', 'M', nil, nil),
@@ -29,11 +29,11 @@ def parse_ged filename
         end
         unless husband.nil?
           wife = '__?F?__' if wife.nil?
-          people[husband].add_family(wife, children)
+          people[husband].add_family(wife, children, marriage)
         end
         unless wife.nil?
           husband = '__?M?__' if husband.nil?
-          people[wife].add_family(husband, children)
+          people[wife].add_family(husband, children, marriage)
         end
       end
 
@@ -43,7 +43,7 @@ def parse_ged filename
         given, surname, sex, birth, death, bd = nil, nil, nil, nil, nil, nil
       when 'FAM'
         mode = :family
-        husband, wife, children = nil, nil, []
+        husband, wife, children, marriage = nil, nil, [], nil
       else
         mode = nil
       end
@@ -62,13 +62,18 @@ def parse_ged filename
       when 'DEAT'
         bd = :death
         death = nil
+      when 'MARR'
+        bd = :marriage
+        marriage = nil
       when 'DATE'
         case bd
         when :birth
-          birth = rest if level == 2
+          birth = rest
         when :death
-          death = rest if level == 2
-        end
+          death = rest
+        when :marriage
+          marriage = rest
+        end if level == 2
         bd = nil
       when 'HUSB'
         husband = rest

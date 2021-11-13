@@ -14,10 +14,14 @@ DateRange = Struct.new(:from, :to) do # <from, to)
     return false if other.nil? or self.to.nil? or other.from.nil?
     (self.to <=> other.from) == 1  # -1 <, 1 >
   end
+  def before other
+    return false if other.nil? or self.from.nil? or other.to.nil?
+    (self.from <=> other.to) == -1  # -1 <, 1 >
+  end
 end
 
 class Person
-  attr_reader :name, :sex, :birth, :death, :families, :parents, :given, :surname, :birth_range, :death_range
+  attr_reader :name, :sex, :birth, :death, :families, :parents, :given, :surname, :birth_range, :death_range, :marriages
 
   def initialize(given, surname, sex, birth, death)
     @given = given
@@ -29,15 +33,17 @@ class Person
     @death, @death_range = Person.parse_date death
     @families = {}
     @parents = []
+    @marriages = {}
   end
 
   def add_parent parent_ref
     @parents << parent_ref unless parent_ref.nil?
   end
 
-  def add_family(spouse_ref, children_refs)
+  def add_family(spouse_ref, children_refs, marriage)
     raise 'unknown spouse' if spouse_ref.nil?
     @families[spouse_ref] = children_refs.clone unless spouse_ref.nil?
+    @marriages[spouse_ref] = Person.parse_date marriage  # [text, DateRange]
   end
 
   def spouses
