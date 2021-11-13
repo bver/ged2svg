@@ -93,6 +93,7 @@ The _check_ged_ utility checks and reports if:
 * the marriage date comes before person's date of birth
 * the marriage date comes after the person's death
 * more siblings with the same given name (might be possible)
+* the parent too old when the child was born (warning)
 
 ```
 ./check_ged.rb  family.ged

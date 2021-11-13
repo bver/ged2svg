@@ -4,7 +4,7 @@
 
 require 'date'
 
-DateRange = Struct.new(:from, :to) do # <from, to)
+DateRange = Struct.new(:from, :to) do
   def to_s
     return "?" if from.nil? and to.nil?
     return from.to_s if from and from.next_day() == to
@@ -17,6 +17,11 @@ DateRange = Struct.new(:from, :to) do # <from, to)
   def before other
     return false if other.nil? or self.from.nil? or other.to.nil?
     (self.from <=> other.to) == -1  # -1 <, 1 >
+  end
+  def add_years how_much
+    new_from = from ? from.next_year(how_much) : nil
+    new_to = to ? to.next_year(how_much) : nil
+    DateRange.new(new_from, new_to)
   end
 end
 
