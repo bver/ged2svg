@@ -76,9 +76,9 @@ class Person
       date = Date.new(tokens.last.to_i, @@months[tokens[2]], tokens[1].to_i)
       range = case tokens.first
       when 'ABT', 'EST'
-        DateRange.new(date, date.next_day())
+        DateRange.new(date, date)
       when 'BEF'
-        DateRange.new(nil, date.next_day())
+        DateRange.new(nil, date)
       when 'AFT'
         DateRange.new(date, nil)
       end
@@ -90,9 +90,9 @@ class Person
           date = Date.new(tokens.last.to_i, @@months[tokens[1]], 1)
           range = case tokens.first
           when 'ABT', 'EST'
-            DateRange.new(date, date.next_month())
+            DateRange.new(date, date.next_month().prev_day())
           when 'BEF'
-            DateRange.new(nil, date.next_month())
+            DateRange.new(nil, date.next_month().prev_day())
           when 'AFT'
             DateRange.new(date, nil)
           end
@@ -100,7 +100,7 @@ class Person
         end
         # 1 JAN 1970
         date = Date.new(tokens.last.to_i, @@months[tokens[1]], tokens.first.to_i)
-        range = DateRange.new(date, date.next_day())
+        range = DateRange.new(date, date)
         return [ "#{tokens.first}. #{@@months[tokens[1]]}. #{tokens.last}", range ]
       end
     when 2
@@ -109,9 +109,9 @@ class Person
         date = Date.new(tokens.last.to_i, 1, 1)
         range = case tokens.first
         when 'ABT', 'EST'
-          DateRange.new(date, date.next_year())
+          DateRange.new(date, date.next_year().prev_day())
         when 'BEF'
-          DateRange.new(nil, date.next_year())
+          DateRange.new(nil, date.next_year().prev_day())
         when 'AFT'
           DateRange.new(date, nil)
         end
@@ -119,13 +119,13 @@ class Person
       elsif @@months.key? tokens.first
         # JAN 1970
         date = Date.new(tokens.last.to_i, @@months[tokens.first], 1)
-        range = DateRange.new(date, date.next_month())
+        range = DateRange.new(date, date.next_month().prev_day())
         return [ "#{@@months[tokens.first]}. #{tokens.last}", range ]
       end
     when 1
       # 1970
       date = Date.new(tokens.last.to_i, 1, 1)
-      return [ tokens.first, DateRange.new(date, date.next_year()) ]
+      return [ tokens.first, DateRange.new(date, date.next_year().prev_day()) ]
     end
     [nil, nil]  # not parsable
   end

@@ -65,6 +65,8 @@ def parse_ged filename
       when 'MARR'
         bd = :marriage
         marriage = nil
+      when 'BAPM'
+        bd = nil
       when 'DATE'
         case bd
         when :birth

@@ -28,9 +28,10 @@ people.each_pair do |id, person|
   person.families.each_pair do |spouse_id, children|
     spouse = people[spouse_id]
     puts "  spouse: #{spouse.name} #{format_dates spouse} INDI: #{spouse_id}"
+    puts "  mariage: #{person.marriages[spouse_id].first}" if person.marriages.key? spouse_id
     children.each do |child_id|
       child = people[child_id]
-      puts "   child: #{child.name} #{format_dates child} INDI: #{child_id}"
+      puts "    child: #{child.name} #{format_dates child} INDI: #{child_id}"
     end
   end
 end
