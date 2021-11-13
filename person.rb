@@ -2,21 +2,25 @@
 # (c) 2017 Pavel Suchmann <pavel@suchmann.cz>
 # Licensed under the terms of the GNU GPL version 3 (or later)
 
+require 'date'
+
+DateRange = Struct.new(:from, :to)  # <from, to)
+
 class Person
-  attr_reader :name, :sex, :birth, :death, :families, :parents, :given, :surname 
-  
+  attr_reader :name, :sex, :birth, :death, :families, :parents, :given, :surname, :birth_range, :death_range
+
   def initialize(given, surname, sex, birth, death)
     @given = given
-    @surname = surname 
+    @surname = surname
     @name = given.nil? ? '' : given
     @name = surname.nil? ? @name : "#{@name} #{surname}"
-    @sex = (sex == 'M') ? :male : :female 
-    @birth = Person.parse_date birth
-    @death = Person.parse_date death
+    @sex = (sex == 'M') ? :male : :female
+    @birth, @birth_range = Person.parse_date birth
+    @death, @death_range = Person.parse_date death
     @families = {}
     @parents = []
   end
-  
+
   def add_parent parent_ref
     @parents << parent_ref unless parent_ref.nil?
   end
@@ -37,43 +41,90 @@ class Person
   def lifespan
     if @birth.nil?
       @death.nil? ? '' : "+ #{@death}"
-    else  
-      @death.nil? ? "#{@birth}" : "#{@birth} - #{@death}" 
-    end  
+    else
+      @death.nil? ? "#{@birth}" : "#{@birth} - #{@death}"
+    end
   end
 
-  @@months = { 'JAN'=>1, 'FEB'=>2, 'MAR'=>3, 'APR'=>4, 'MAY'=>5, 'JUN'=>6, 
+  @@months = { 'JAN'=>1, 'FEB'=>2, 'MAR'=>3, 'APR'=>4, 'MAY'=>5, 'JUN'=>6,
                'JUL'=>7, 'AUG'=>8, 'SEP'=>9, 'OCT'=>10, 'NOV'=>11, 'DEC'=>12 }
   @@pref = { 'ABT' => '~', 'EST' => '~', 'BEF' => '<', 'AFT' => '>' }
   def self.parse_date date
-    return nil if date.nil?
+    return [ nil, nil ] if date.nil?
     tokens = date.split /\s+/
+    raise "BET date range not supported: '#{date}'" if tokens.first == 'BET'
     case tokens.size
     when 4
-      return "#{@@pref[tokens.first]} #{tokens[1]}. #{@@months[tokens[2]]}. #{tokens.last}"
+      # ABT 1 JAN 1970
+      return nil, nil unless @@pref.key? tokens.first
+      date = Date.new(tokens.last.to_i, @@months[tokens[2]], tokens[1].to_i)
+      range = case tokens.first
+      when 'ABT', 'EST'
+        DateRange.new(date, date.next_day())
+      when 'BEF'
+        DateRange.new(nil, date.next_day())
+      when 'AFT'
+        DateRange.new(date, nil)
+      end
+      return [ "#{@@pref[tokens.first]} #{tokens[1]}. #{@@months[tokens[2]]}. #{tokens.last}", range ]
     when 3
-      return "#{@@pref[tokens.first]} #{@@months[tokens[1]]}. #{tokens.last}" if @@pref.has_key? tokens.first and @@months.has_key? tokens[1]
-      return "#{tokens.first}. #{@@months[tokens[1]]}. #{tokens.last}" if @@months.has_key? tokens[1]
+      if @@months.key? tokens[1]
+        if @@pref.key? tokens.first
+        # ABT JAN 1970
+          date = Date.new(tokens.last.to_i, @@months[tokens[1]], 1)
+          range = case tokens.first
+          when 'ABT', 'EST'
+            DateRange.new(date, date.next_month())
+          when 'BEF'
+            DateRange.new(nil, date.next_month())
+          when 'AFT'
+            DateRange.new(date, nil)
+          end
+          return [ "#{@@pref[tokens.first]} #{@@months[tokens[1]]}. #{tokens.last}", range ]
+        end
+        # 1 JAN 1970
+        date = Date.new(tokens.last.to_i, @@months[tokens[1]], tokens.first.to_i)
+        range = DateRange.new(date, date.next_day())
+        return [ "#{tokens.first}. #{@@months[tokens[1]]}. #{tokens.last}", range ]
+      end
     when 2
-      return "#{@@pref[tokens.first]} #{tokens.last}" if @@pref.has_key? tokens.first
-      return "#{@@months[tokens.first]}. #{tokens.last}" if @@months.has_key? tokens.first
-    else  
-      return tokens.first        
+      if @@pref.key? tokens.first
+        # ABT 1970
+        date = Date.new(tokens.last.to_i, 1, 1)
+        range = case tokens.first
+        when 'ABT', 'EST'
+          DateRange.new(date, date.next_year())
+        when 'BEF'
+          DateRange.new(nil, date.next_year())
+        when 'AFT'
+          DateRange.new(date, nil)
+        end
+        return [ "#{@@pref[tokens.first]} #{tokens.last}", range ]
+      elsif @@months.key? tokens.first
+        # JAN 1970
+        date = Date.new(tokens.last.to_i, @@months[tokens.first], 1)
+        range = DateRange.new(date, date.next_month())
+        return [ "#{@@months[tokens.first]}. #{tokens.last}", range ]
+      end
+    when 1
+      # 1970
+      date = Date.new(tokens.last.to_i, 1, 1)
+      return [ tokens.first, DateRange.new(date, date.next_year()) ]
     end
+    [nil, nil]  # not parsable
   end
 end
 
 def find_trunk(people, root_ref, central_ref)
   paths = [ [central_ref] ]
-  until paths.empty? 
+  until paths.empty?
     current = paths.pop
     people[current.first].parents.each do |parent_ref|
       extended = current.clone
       extended.unshift parent_ref
       return extended if parent_ref == root_ref
       paths.push extended
-    end 
+    end
   end
   raise 'cannot find trunk'
 end
-
